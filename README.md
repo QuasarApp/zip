@@ -2,7 +2,6 @@
 This is done by hacking awesome [miniz](https://code.google.com/p/miniz) library and layering functions on top of the miniz v1.15 API.
 
 [![Build](https://github.com/kuba--/zip/workflows/build/badge.svg)](https://github.com/kuba--/zip/actions?query=workflow%3Abuild)
-[![Version](https://badge.fury.io/gh/kuba--%2Fzip.svg)](https://github.com/kuba--/zip/releases)
 
 
 # The Idea
@@ -172,6 +171,38 @@ for (i = 0; i < n; ++i) {
 zip_close(zip);
 ```
 
+* Compress folder (recursively)
+```c
+void zip_walk(struct zip_t *zip, const char *path) {
+    DIR *dir;
+    struct dirent *entry;
+    char fullpath[MAX_PATH];
+    struct stat s;
+
+    memset(fullpath, 0, MAX_PATH);
+    dir = opendir(path);
+    assert(dir);
+
+    while ((entry = readdir(dir))) {
+      // skip "." and ".."
+      if (!strcmp(entry->d_name, ".\0") || !strcmp(entry->d_name, "..\0"))
+        continue;
+
+      snprintf(fullpath, sizeof(fullpath), "%s/%s", path, entry->d_name);
+      stat(fullpath, &s);
+      if (S_ISDIR(s.st_mode))
+        zip_walk(zip, fullpath);
+      else {
+        zip_entry_open(zip, fullpath);
+        zip_entry_fwrite(zip, fullpath);
+        zip_entry_close(zip);
+      }
+    }
+
+    closedir(dir);
+}
+```
+
 # Bindings
 Compile zip library as a dynamic library.
 ```shell
@@ -338,9 +369,9 @@ extern "libzip.so" func zip_entry_fwrite(zip: c_ptr, filename: string) -> int
 func main() -> int
 {
     let content = "Test content"
-    
+
     let zip = zip_open("/tmp/never.zip", 6, 'w');
-    
+
     zip_entry_open(zip, "test.file");
     zip_entry_fwrite(zip, "/tmp/test.txt");
     zip_entry_close(zip);
@@ -371,13 +402,14 @@ new Zip {
 }
 ```
 
-# Contribution Rules/Coding Standards
-No need to throw away your coding style, just do your best to follow default clang-format style.
-Apply `clang-format` to the source files before commit:
-```sh
-for file in $(git ls-files | \grep -E '\.(c|h)$' | \grep -v -- '#')
-do
-    clang-format -i $file
-done
-```
+# Check out more cool projects which use this library:
+- [Filament](https://github.com/google/filament): Filament is a real-time physically based rendering engine for Android, iOS, Linux, macOS, Windows, and WebGL. It is designed to be as small as possible and as efficient as possible on Android.
+- [Hermes JS Engine](https://github.com/facebook/hermes): Hermes is a JavaScript engine optimized for fast start-up of React Native apps on Android. It features ahead-of-time static optimization and compact bytecode.
+- [Open Asset Import Library](https://github.com/assimp/assimp): A library to import and export various 3d-model-formats including scene-post-processing to generate missing render data.
+- [The Ring Programming Language](https://ring-lang.github.io): Innovative and practical general-purpose multi-paradigm language.
+- [The V Programming Language](https://github.com/vlang/v): Simple, fast, safe, compiled. For developing maintainable software.
+- [TIC-80](https://github.com/nesbox/TIC-80): TIC-80 is a FREE and OPEN SOURCE fantasy computer for making, playing and sharing tiny games.
+- [Urho3D](https://github.com/urho3d/Urho3D): Urho3D is a free lightweight, cross-platform 2D and 3D game engine implemented in C++ and released under the MIT license. Greatly inspired by OGRE and Horde3D.
+- [Vcpkg](https://github.com/microsoft/vcpkg): Vcpkg helps you manage C and C++ libraries on Windows, Linux and MacOS.
+- [and more...](https://grep.app/search?q=kuba--/zip)
 
